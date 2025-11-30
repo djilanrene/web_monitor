@@ -11,144 +11,222 @@ import re
 from collections import Counter
 
 # ==============================================================================
-# 1. DESIGN SYSTEM & CSS (NEON / GLASSMORPHISM)
+# 1. DESIGN SYSTEM "ECLIPSE" (Sobre & Lumineux)
 # ==============================================================================
 
 def setup_page():
-    st.set_page_config(page_title="Web Monitor.io", page_icon="⚡", layout="wide")
+    st.set_page_config(page_title="Monitor.io", page_icon="🌑", layout="wide")
     
     st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Rajdhani:wght@500;700&family=Inter:wght@400;600&display=swap');
+        /* Import Font: Inter (Le standard du web moderne) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         
         :root {
-            --bg-deep: #050505;
-            --bg-card: #0F1115;
-            --neon-blue: #00F3FF;
-            --neon-purple: #BC13FE;
-            --neon-green: #0AFF60;
-            --text-main: #E0E6ED;
-            --text-muted: #94A3B8;
-            --border-glow: 0 0 10px rgba(0, 243, 255, 0.15);
+            --bg-app: #09090b;       /* Noir zinc très profond */
+            --bg-card: #18181b;      /* Gris zinc foncé */
+            --border-subtle: #27272a;/* Bordure discrète */
+            --text-main: #f4f4f5;    /* Blanc cassé */
+            --text-muted: #a1a1aa;   /* Gris moyen */
+            --accent-glow: rgba(255, 255, 255, 0.15); /* Lumière blanche diffuse */
+            --accent-blue: #3b82f6;  /* Bleu pro pour les liens/badges */
         }
 
-        /* RESET & BASICS */
-        .stApp { background-color: var(--bg-deep); font-family: 'Inter', sans-serif; }
-        h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -1px; color: white; }
+        /* --- GLOBAL RESET --- */
+        .stApp { background-color: var(--bg-app); font-family: 'Inter', sans-serif; }
         
-        /* --- DASHBOARD HUD (SYNTHESE) --- */
-        .hud-container {
+        h1, h2, h3 { 
+            font-weight: 600; 
+            letter-spacing: -0.02em; 
+            color: var(--text-main); 
+        }
+
+        /* --- HUD (Top Dashboard) --- */
+        .hud-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 16px;
+            margin-bottom: 40px;
         }
-        .hud-card {
-            background: rgba(15, 17, 21, 0.7);
-            border: 1px solid #1E293B;
-            border-left: 3px solid var(--neon-blue);
-            padding: 15px 20px;
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            transition: all 0.3s;
-        }
-        .hud-card:hover { box-shadow: var(--border-glow); border-color: var(--neon-blue); }
-        .hud-label { font-family: 'Rajdhani', sans-serif; color: var(--text-muted); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
-        .hud-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; color: white; text-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
-
-        /* --- NAVIGATION TABS --- */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px; background-color: rgba(255,255,255,0.02); padding: 5px;
-            border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 40px; border-radius: 6px; color: var(--text-muted); 
-            font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem; border: none !important;
-        }
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(90deg, rgba(0, 243, 255, 0.1) 0%, rgba(188, 19, 254, 0.1) 100%) !important;
-            color: var(--neon-blue) !important;
-            border: 1px solid rgba(0, 243, 255, 0.3) !important;
-            box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.1);
-        }
-
-        /* --- FEED CARD --- */
-        .feed-card {
-            background-color: var(--bg-card);
-            border: 1px solid #1E232E;
-            border-radius: 12px;
+        .hud-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
             padding: 20px;
-            margin-bottom: 16px;
-            position: relative;
-            overflow: hidden;
+            border-radius: 8px;
             transition: all 0.3s ease;
         }
-        .feed-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-            background: var(--neon-purple); opacity: 0; transition: opacity 0.3s;
+        /* Effet Lumière Hover HUD */
+        .hud-item:hover {
+            border-color: #52525b;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.05);
         }
-        .feed-card:hover { 
-            transform: translateY(-3px); 
-            border-color: var(--neon-blue);
-            box-shadow: 0 10px 30px -10px rgba(0, 243, 255, 0.15);
+        .hud-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
         }
-        .feed-card:hover::before { opacity: 1; }
-        
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .source-badge { 
-            background: rgba(0, 243, 255, 0.1); color: var(--neon-blue); padding: 4px 8px; 
-            border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 4px; 
-            font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
-        }
-        .time-badge { color: #555; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; }
-        
-        .card-title { 
-            color: white; font-size: 1.1rem; font-weight: 600; line-height: 1.4;
-            text-decoration: none; display: block; margin-bottom: 8px; transition: color 0.2s;
-        }
-        .card-title:hover { color: var(--neon-blue); text-shadow: 0 0 8px rgba(0,243,255,0.4); }
-        .card-summary { color: #8892B0; font-size: 0.9rem; line-height: 1.5; margin-bottom: 15px; }
-
-        /* TAGS */
-        .tags-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .neon-tag {
-            background: rgba(188, 19, 254, 0.05); color: var(--neon-purple); 
-            border: 1px solid rgba(188, 19, 254, 0.3);
-            padding: 2px 10px; border-radius: 100px; font-size: 0.7rem; font-weight: 600;
+        .hud-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-main);
         }
 
-        /* --- SIDEBAR & INPUTS --- */
-        section[data-testid="stSidebar"] { background-color: #080A0E; border-right: 1px solid #1E232E; }
+        /* --- FEED CARD (Le coeur du design) --- */
+        .feed-card {
+            background-color: var(--bg-app); /* Fond sombre */
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px; /* Coins moins arrondis pour faire plus sérieux */
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        /* L'effet "Spotlight" au survol */
+        .feed-card:hover {
+            border-color: rgba(255, 255, 255, 0.3); /* Bordure s'illumine */
+            transform: translateY(-2px);
+            background-color: #121214; /* Légèrement plus clair */
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 255, 255, 0.03); /* Glow diffus */
+        }
+
+        .meta-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+        }
+        
+        .source-pill {
+            color: var(--text-main);
+            background: #27272a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .feed-card:hover .source-pill { border-color: #52525b; }
+
+        .date-text { color: #52525b; }
+
+        .card-title {
+            display: block;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-main);
+            text-decoration: none;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            transition: color 0.2s;
+        }
+        .card-title:hover { color: var(--accent-blue); }
+
+        .card-summary {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        /* --- TAGS (Minimalistes) --- */
+        .tag-minimal {
+            display: inline-block;
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-right: 10px;
+            position: relative;
+            padding-left: 10px;
+        }
+        .tag-minimal::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #3f3f46;
+            border-radius: 50%;
+        }
+
+        /* --- TABS (Onglets) --- */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 20px;
+            background-color: transparent;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0px;
+            margin-bottom: 20px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding-bottom: 12px;
+            border: none;
+        }
+        .stTabs [aria-selected="true"] {
+            color: var(--text-main) !important;
+            border-bottom: 2px solid var(--text-main) !important;
+        }
+
+        /* --- SIDEBAR --- */
+        section[data-testid="stSidebar"] {
+            background-color: #0c0c0e;
+            border-right: 1px solid var(--border-subtle);
+        }
+        
+        /* Inputs & Buttons */
         .stTextInput input {
-            background-color: #12151C !important; color: white !important; border: 1px solid #333 !important;
+            background-color: #18181b !important;
+            border: 1px solid #27272a !important;
+            color: white !important;
+            border-radius: 6px;
         }
-        .stTextInput input:focus { border-color: var(--neon-blue) !important; box-shadow: 0 0 10px rgba(0,243,255,0.2) !important; }
-        
-        /* Custom Button */
+        .stTextInput input:focus {
+            border-color: #52525b !important;
+        }
         div.stButton > button {
-            background: linear-gradient(45deg, #1e3a8a, #1e40af);
-            color: white; border: none; font-weight: bold; letter-spacing: 0.5px;
-            transition: all 0.3s;
+            background-color: var(--text-main);
+            color: black;
+            border: none;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: opacity 0.2s;
         }
         div.stButton > button:hover {
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-            transform: scale(1.02);
+            opacity: 0.9;
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
         }
 
-        /* DIGEST LIST */
-        .digest-container {
-            background: #0F1115; border: 1px solid #222; border-radius: 8px;
-            padding: 20px; margin-bottom: 15px;
+        /* --- DIGEST --- */
+        .digest-group {
+            border-left: 1px solid #27272a;
+            padding-left: 20px;
+            margin-bottom: 30px;
         }
-        .digest-link { color: #BBB; text-decoration: none; display: block; padding: 5px 0; border-bottom: 1px solid #1A1D24; transition: 0.2s;}
-        .digest-link:hover { color: var(--neon-green); padding-left: 5px; }
+        .digest-link {
+            display: block;
+            padding: 6px 0;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        .digest-link:hover {
+            color: var(--text-main);
+            transform: translateX(5px);
+        }
 
         </style>
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. INTELLIGENCE (NLP)
+# 2. INTELLIGENCE (NLP - Inchangé car performant)
 # ==============================================================================
 
 class DeepTagger:
@@ -168,23 +246,21 @@ class DeepTagger:
 
     @staticmethod
     def analyze_tags(title, description):
-        text = (title + " " + title + " " + description) # Titre pondéré double
+        text = (title + " " + title + " " + description)
         clean = DeepTagger.clean_text(text)
         words = clean.split()
         filtered = [w for w in words if len(w) > 3 and w not in DeepTagger.STOP_WORDS]
-        
         if not filtered: return "Général"
-        
         most_common = Counter(filtered).most_common(3)
         tags = [tag.capitalize() for tag, count in most_common]
         return ",".join(tags)
 
 # ==============================================================================
-# 3. BACKEND (DATABASE)
+# 3. BACKEND (Inchangé)
 # ==============================================================================
 
 class Database:
-    def __init__(self, db_name="webmonitor_neon.db"):
+    def __init__(self, db_name="webmonitor_clean.db"):
         self.conn = sqlite3.connect(db_name, check_same_thread=False)
         self.init_db()
 
@@ -214,20 +290,13 @@ class Database:
 
     def get_stats(self):
         try:
-            # Stats pour le HUD
-            total_articles = pd.read_sql("SELECT COUNT(*) as count FROM feeds", self.conn)['count'][0]
-            
-            # Top Source
-            df_source = pd.read_sql("SELECT source_name, COUNT(*) as c FROM feeds GROUP BY source_name ORDER BY c DESC LIMIT 1", self.conn)
-            top_source = df_source['source_name'][0] if not df_source.empty else "Aucune"
-            
-            # Last Update
-            df_last = pd.read_sql("SELECT MAX(created_at) as last FROM feeds", self.conn)
-            last_update = df_last['last'][0] if df_last['last'][0] else "N/A"
-            
-            return total_articles, top_source, last_update
-        except:
-            return 0, "N/A", "N/A"
+            total = pd.read_sql("SELECT COUNT(*) as count FROM feeds", self.conn)['count'][0]
+            df_s = pd.read_sql("SELECT source_name, COUNT(*) as c FROM feeds GROUP BY source_name ORDER BY c DESC LIMIT 1", self.conn)
+            top = df_s['source_name'][0] if not df_s.empty else "N/A"
+            df_l = pd.read_sql("SELECT MAX(created_at) as last FROM feeds", self.conn)
+            last = df_l['last'][0] if df_l['last'][0] else "N/A"
+            return total, top, last
+        except: return 0, "-", "-"
 
     def add_source(self, name, url):
         try:
@@ -264,171 +333,152 @@ class Database:
         return pd.read_sql(query, self.conn, params=params)
 
 # ==============================================================================
-# 4. ENGINE
-# ==============================================================================
-
-class Engine:
-    def __init__(self, db):
-        self.db = db
-
-    def sync(self):
-        sources = self.db.get_sources()
-        count = 0
-        progress = st.progress(0)
-        for idx, row in sources.iterrows():
-            try:
-                d = feedparser.parse(row['url'])
-                for entry in d.entries[:6]:
-                    tags = DeepTagger.analyze_tags(entry.title, entry.get('description', ''))
-                    saved = self.db.save_feed_item(
-                        row['id'], row['name'], entry.title, 
-                        str(entry.get('description', '') or '')[:250]+"...",
-                        entry.link, tags, datetime.now()
-                    )
-                    if saved: count += 1
-            except: pass
-            progress.progress((idx + 1)/len(sources))
-        progress.empty()
-        return count
-
-# ==============================================================================
-# 5. UI COMPONENTS
+# 4. UI RENDERERS (Adaptés au nouveau style)
 # ==============================================================================
 
 def render_hud(total, top, last):
-    # Parsing de la date pour l'affichage
-    display_date = last
-    if last != "N/A":
+    # Formatage date épuré
+    date_str = last
+    if last != "-" and last != "N/A":
         try:
             dt = datetime.strptime(last, '%Y-%m-%d %H:%M:%S.%f')
-            display_date = dt.strftime("%H:%M • %d/%m")
+            date_str = dt.strftime("%d %b, %H:%M")
         except: pass
 
     st.markdown(f"""
-        <div class="hud-container">
-            <div class="hud-card">
-                <div class="hud-label">Articles Scrappés</div>
-                <div class="hud-value" style="color:var(--neon-blue)">{total}</div>
+        <div class="hud-grid">
+            <div class="hud-item">
+                <div class="hud-label">Articles capturés</div>
+                <div class="hud-value">{total}</div>
             </div>
-            <div class="hud-card" style="border-left-color: var(--neon-purple);">
-                <div class="hud-label">Top Actualité</div>
-                <div class="hud-value" style="font-size:1.4rem;">{top}</div>
+            <div class="hud-item">
+                <div class="hud-label">Source la plus active</div>
+                <div class="hud-value" style="color:#a1a1aa;">{top}</div>
             </div>
-            <div class="hud-card" style="border-left-color: var(--neon-green);">
-                <div class="hud-label">Dernière Mise à Jour</div>
-                <div class="hud-value" style="font-size:1.4rem;">{display_date}</div>
+            <div class="hud-item">
+                <div class="hud-label">Dernière synchronisation</div>
+                <div class="hud-value" style="font-size:1.4rem; padding-top:5px;">{date_str}</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
 def render_live_feed(df):
     for row in df.itertuples():
-        tags_html = "".join([f"<span class='neon-tag'>#{t.strip()}</span>" for t in row.tags.split(',')])
+        # Tags minimalistes
+        tags_html = "".join([f"<span class='tag-minimal'>{t.strip()}</span>" for t in row.tags.split(',')])
         
-        # Date formatting shortcut
-        try: created = row.created_at.split('.')[0] 
-        except: created = row.created_at
+        # Date relative (ex: 12:45)
+        try: 
+            t = row.created_at.split(' ')[1][:5]
+        except: t = row.created_at
 
         st.markdown(f"""
         <div class="feed-card">
-            <div class="card-header">
-                <span class="source-badge">{row.source_name}</span>
-                <span class="time-badge">{created}</span>
+            <div class="meta-row">
+                <span class="source-pill">{row.source_name}</span>
+                <span class="date-text">{t}</span>
             </div>
             <a href="{row.url}" target="_blank" class="card-title">{row.title}</a>
             <div class="card-summary">{row.summary}</div>
-            <div class="tags-row">{tags_html}</div>
+            <div style="margin-top:12px;">{tags_html}</div>
         </div>
         """, unsafe_allow_html=True)
 
 def render_digest(df, title):
-    st.markdown(f"<h3 style='margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;'>{title}</h3>", unsafe_allow_html=True)
+    st.markdown(f"### {title}")
     if df.empty:
-        st.info("Données insuffisantes.")
+        st.caption("Données insuffisantes.")
         return
 
     grouped = df.groupby('source_name')
     for source, group in grouped:
         count = len(group)
-        topic = Counter(",".join(group['tags'].tolist()).split(',')).most_common(1)[0][0]
+        # On trouve le sujet dominant
+        all_tags = ",".join(group['tags'].tolist()).split(',')
+        topic = Counter([t.strip() for t in all_tags if t.strip()]).most_common(1)[0][0]
         
         st.markdown(f"""
-        <div class="digest-container">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-weight:bold; color:white; font-size:1.1rem;">{source}</span>
-                <span class="neon-tag" style="border-color:var(--neon-green); color:var(--neon-green)">{topic} • {count}</span>
-            </div>
-            {"".join([f"<a href='{row.url}' target='_blank' class='digest-link'>› {row.title}</a>" for row in group.itertuples()])}
+        <div style="margin-top:20px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+            <span style="font-weight:600; color:white;">{source}</span>
+            <span style="font-size:0.8rem; color:#52525b;">— {count} articles ({topic})</span>
+        </div>
+        <div class="digest-group">
+            {"".join([f"<a href='{row.url}' target='_blank' class='digest-link'>{row.title}</a>" for row in group.itertuples()])}
         </div>
         """, unsafe_allow_html=True)
 
 def render_sidebar(db):
     with st.sidebar:
-        st.title("Web Monitor.io")
-        st.caption("v5.1 Neon Edition")
+        st.header("Monitor.io")
+        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
         
-        st.markdown("### ⚡ Actions")
-        if st.button("Lancer le Scan", type="primary", use_container_width=True):
-            engine = Engine(db)
-            n = engine.sync()
-            st.toast(f"{n} nouveaux articles !", icon="🔥")
+        if st.button("Lancer la synchronisation", type="primary", use_container_width=True):
+            # Logique de sync simple
+            sources = db.get_sources()
+            count = 0
+            progress = st.progress(0)
+            for i, row in sources.iterrows():
+                try:
+                    d = feedparser.parse(row['url'])
+                    for entry in d.entries[:6]:
+                        tags = DeepTagger.analyze_tags(entry.title, entry.get('description', ''))
+                        if db.save_feed_item(row['id'], row['name'], entry.title, entry.get('description', '')[:250]+"...", entry.link, tags, datetime.now()):
+                            count += 1
+                except: pass
+                progress.progress((i+1)/len(sources))
+            progress.empty()
+            st.toast(f"Terminé : {count} nouveaux articles", icon="✨")
             time.sleep(1)
             st.rerun()
 
         st.markdown("---")
-        st.markdown("### 📡 Sources")
+        st.subheader("Sources")
         
-        with st.expander("Ajouter un flux RSS"):
-            with st.form("add"):
-                n = st.text_input("Nom")
-                u = st.text_input("URL")
-                if st.form_submit_button("Sauvegarder"):
-                    if n and u: 
-                        db.add_source(n, u)
-                        st.rerun()
+        with st.form("add_source", clear_on_submit=True):
+            c1, c2 = st.columns([1,2])
+            n = c1.text_input("Nom", placeholder="Le Monde")
+            u = c2.text_input("RSS URL", placeholder="https://...")
+            if st.form_submit_button("Ajouter +", use_container_width=True):
+                if n and u: 
+                    db.add_source(n, u)
+                    st.rerun()
 
+        # Liste épurée
         sources = db.get_sources()
         if not sources.empty:
+            st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
             for _, row in sources.iterrows():
-                c1, c2 = st.columns([5,1])
-                c1.markdown(f"<div style='color:#ccc; font-size:0.9rem; padding-top:5px;'>{row['name']}</div>", unsafe_allow_html=True)
-                if c2.button("✕", key=f"d_{row['id']}"):
+                cols = st.columns([5,1])
+                cols[0].markdown(f"<span style='color:#a1a1aa; font-size:0.9rem;'>{row['name']}</span>", unsafe_allow_html=True)
+                if cols[1].button("✕", key=f"del_{row['id']}"):
                     db.delete_source(row['id'])
                     st.rerun()
-                st.markdown("<div style='height:1px; background:#222; margin:5px 0;'></div>", unsafe_allow_html=True)
 
 # ==============================================================================
-# MAIN
+# MAIN EXECUTION
 # ==============================================================================
 
 def main():
     setup_page()
     db = Database()
     
-    # Récupération Stats HUD
-    total, top, last = db.get_stats()
-    
     render_sidebar(db)
     
-    # 1. HUD DASHBOARD (En haut)
+    # HUD
+    total, top, last = db.get_stats()
     render_hud(total, top, last)
     
-    # 2. CONTENU PRINCIPAL
-    tabs = st.tabs(["🔥 Live Feed", "📊 Digest 24h", "📅 Hebdomadaire", "🗓 Mensuel"])
+    # Navigation Tabs
+    tabs = st.tabs(["Flux temps réel", "24 Heures", "Cette Semaine", "Ce Mois"])
     
     with tabs[0]:
         df = db.get_data().head(60)
-        if df.empty: st.warning("Le vide sidéral... Ajoutez des sources !")
+        if df.empty: st.info("Ajoutez des sources RSS dans la barre latérale pour commencer.")
         else: render_live_feed(df)
-        
-    with tabs[1]:
-        render_digest(db.get_data(24), "Synthèse 24H")
-        
-    with tabs[2]:
-        render_digest(db.get_data(168), "Synthèse Semaine")
-        
-    with tabs[3]:
-        render_digest(db.get_data(720), "Synthèse Mois")
+
+    with tabs[1]: render_digest(db.get_data(24), "Synthèse quotidienne")
+    with tabs[2]: render_digest(db.get_data(168), "Synthèse hebdomadaire")
+    with tabs[3]: render_digest(db.get_data(720), "Synthèse mensuelle")
 
 if __name__ == "__main__":
     main()
